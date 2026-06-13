@@ -44,6 +44,7 @@ MODULES_CONF="/etc/modules-load.d/joeyblog-qdisc.conf"
 SECURITY_MODPROBE_CONF="/etc/modprobe.d/99-joeyblog-security.conf"
 # 可选：提升 GitHub API 限额（支持 GITHUB_TOKEN / GH_TOKEN）
 GITHUB_API_TOKEN="${GITHUB_TOKEN:-${GH_TOKEN:-}}"
+SPEEDTEST_BIN="speedtest"
 
 gh_api_get() {
     local url="$1"
@@ -193,7 +194,9 @@ calculate_smart_buffer_mb() {
 
 # 函数：确保 Ookla 官方 speedtest 可用
 ensure_ookla_speedtest() {
-    if command -v speedtest > /dev/null 2>&1; then
+    if command -v speedtest > /dev/null 2>&1 \
+        && speedtest --version 2>&1 | grep -q "Speedtest by Ookla"; then
+        SPEEDTEST_BIN=$(command -v speedtest)
         return 0
     fi
 
@@ -222,7 +225,9 @@ ensure_ookla_speedtest() {
         sudo mv speedtest /usr/local/bin/speedtest
         sudo chmod +x /usr/local/bin/speedtest
         rm -f speedtest.tgz speedtest.5 speedtest.md
-    )
+    ) || return 1
+
+    SPEEDTEST_BIN="/usr/local/bin/speedtest"
 }
 
 # 函数：运行 Ookla Speedtest 并解析 Ping/Download/Upload
@@ -237,7 +242,7 @@ run_speedtest_measurement() {
     local servers_list
     local speedtest_output=""
     local attempt=0
-    servers_list=$(speedtest --accept-license --accept-gdpr --servers 2>/dev/null | sed -nE 's/^[[:space:]]*([0-9]+).*/\1/p' | head -n 10)
+    servers_list=$("$SPEEDTEST_BIN" --accept-license --accept-gdpr --servers 2>/dev/null | sed -nE 's/^[[:space:]]*([0-9]+).*/\1/p' | head -n 10)
     if [[ -z "$servers_list" ]]; then
         servers_list="auto"
     fi
@@ -249,9 +254,9 @@ run_speedtest_measurement() {
         fi
 
         if [[ "$server_id" == "auto" ]]; then
-            speedtest_output=$(speedtest --accept-license --accept-gdpr 2>&1)
+            speedtest_output=$("$SPEEDTEST_BIN" --accept-license --accept-gdpr 2>&1)
         else
-            speedtest_output=$(speedtest --accept-license --accept-gdpr --server-id="$server_id" 2>&1)
+            speedtest_output=$("$SPEEDTEST_BIN" --accept-license --accept-gdpr --server-id="$server_id" 2>&1)
         fi
 
         SPEEDTEST_PING=$(echo "$speedtest_output" | sed -nE 's/.*(Idle Latency|Latency|Ping):[[:space:]]*([0-9]+(\.[0-9]+)?).*/\2/p' | head -n1)
