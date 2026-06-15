@@ -122,7 +122,7 @@ x86_64-7.0.11-max
 arm64-7.0.11-max
 ```
 
-其中不带 `-max` 的 tag 是标准 BBRv3 内核，带 `-max` 的 tag 是 BBRv3 Max 极限内核。Max 版会弱化/关闭 BBRv3 的降速、ECN、loss/inflight 收敛等控制路径，只适合自有链路极限测速挑战，不建议日常生产使用。
+其中不带 `-max` 的 tag 是标准 BBRv3 内核，带 `-max` 的 tag 是 BBRv3 Max 极限内核。Max 版会极度弱化 BBRv3 的降速、ECN、loss/inflight 收敛力度，但保留反馈闭环，只适合自有链路极限测速挑战，不建议日常生产使用。
 
 ## 检查 BBRv3 状态
 
